@@ -1,35 +1,237 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Calendar, Users, HandHeart, Newspaper, Mail, ArrowUpRight } from "lucide-react";
+import { BookOpen, Calendar, Users, HandHeart, Newspaper, Mail, ArrowUpRight, Clock, UserPlus, Heart, MessageCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { ministries } from "@/lib/constants";
-import { subMonths } from "date-fns";
+import { subMonths, startOfMonth, endOfMonth, formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
   const supabase = createClient();
 
-  const { count: sermonCount } = await supabase.from('sermons').select('*', { count: 'exact', head: true });
-  const { count: eventCount } = await supabase.from('events').select('*', { count: 'exact', head: true }).gt('date', new Date().toISOString());
+  const { count: sermonCount } = await supabase
+    .from('sermons')
+    .select('*', { count: 'exact', head: true });
+
+  const { count: eventCount } = await supabase
+    .from('events')
+    .select('*', { count: 'exact', head: true })
+    .gte('date', new Date().toISOString().split('T')[0]);
+
   const ministryCount = ministries.length;
   
   const oneMonthAgo = subMonths(new Date(), 1).toISOString();
-  const { count: subscriberCount } = await supabase.from('subscribers').select('*', { count: 'exact', head: true }).gt('created_at', oneMonthAgo);
-  const { count: requestCount } = await supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('status', 'Unread');
-  
-  // Placeholder for donations
-  const monthlyDonations = "Ksh 0";
+  const { count: subscriberCount } = await supabase
+    .from('subscribers')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', oneMonthAgo);
 
+  const { count: requestCount } = await supabase
+    .from('prayer_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'unread');
+
+  const currentMonthStart = startOfMonth(new Date()).toISOString();
+  const currentMonthEnd = endOfMonth(new Date()).toISOString();
+  
+  const { data: donationsData } = await supabase
+    .from('donations')
+    .select('amount')
+    .gte('created_at', currentMonthStart)
+    .lte('created_at', currentMonthEnd);
+
+  let monthlyDonations = "Ksh 0";
+  if (donationsData && donationsData.length > 0) {
+    const total = donationsData.reduce((sum, donation) => sum + (donation.amount || 0), 0);
+    monthlyDonations = `Ksh ${total.toLocaleString()}`;
+  }
+
+  let recentActivityData = await supabase
+    .from('recent_activity_view')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (!recentActivityData.data || recentActivityData.data.length === 0) {
+    const [
+      { data: recentPrayers },
+      { data: recentSubscribers },
+      { data: recentDonations },
+      { data: recentContacts },
+      { data: recentEvents },
+      { data: recentSermons }
+    ] = await Promise.all([
+      supabase
+        .from('prayer_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('subscribers')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('donations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('contacts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('sermons')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3)
+    ]);
+
+    const activities = [];
+
+    if (recentPrayers) {
+      recentPrayers.forEach(prayer => {
+        activities.push({
+          id: prayer.id,
+          type: 'prayer_request',
+          title: `New Prayer Request from ${prayer.full_name}`,
+          description: prayer.subject,
+          created_at: prayer.created_at,
+          icon: Heart
+        });
+      });
+    }
+
+    if (recentSubscribers) {
+      recentSubscribers.forEach(subscriber => {
+        activities.push({
+          id: subscriber.id,
+          type: 'subscriber',
+          title: 'New Newsletter Subscriber',
+          description: subscriber.email,
+          created_at: subscriber.created_at,
+          icon: UserPlus
+        });
+      });
+    }
+
+    if (recentDonations) {
+      recentDonations.forEach(donation => {
+        activities.push({
+          id: donation.id,
+          type: 'donation',
+          title: `New Donation from ${donation.full_name}`,
+          description: `Ksh ${donation.amount?.toLocaleString()}`,
+          created_at: donation.created_at,
+          icon: HandHeart
+        });
+      });
+    }
+
+    if (recentContacts) {
+      recentContacts.forEach(contact => {
+        activities.push({
+          id: contact.id,
+          type: 'contact',
+          title: `New Contact Message from ${contact.full_name}`,
+          description: contact.subject,
+          created_at: contact.created_at,
+          icon: MessageCircle
+        });
+      });
+    }
+
+    if (recentEvents) {
+      recentEvents.forEach(event => {
+        activities.push({
+          id: event.id,
+          type: 'event',
+          title: `New Event: ${event.title}`,
+          description: event.location,
+          created_at: event.created_at,
+          icon: Calendar
+        });
+      });
+    }
+
+    if (recentSermons) {
+      recentSermons.forEach(sermon => {
+        activities.push({
+          id: sermon.id,
+          type: 'sermon',
+          title: `New Sermon: ${sermon.title}`,
+          description: `By ${sermon.preacher}`,
+          created_at: sermon.created_at,
+          icon: BookOpen
+        });
+      });
+    }
+
+    recentActivityData.data = activities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+  }
 
   const overviewCards = [
-    { title: "Total Sermons", value: sermonCount, icon: BookOpen, href: "/admin/sermons", buttonText: "View Sermons" },
-    { title: "Upcoming Events", value: eventCount, icon: Calendar, href: "/admin/events", buttonText: "Add Event" },
-    { title: "Active Ministries", value: ministryCount, icon: Users, href: "/admin/ministries", buttonText: "Manage" },
-    { title: "Donations (Month)", value: monthlyDonations, icon: HandHeart, href: "/admin/donations", buttonText: "View Donations" },
-    { title: "New Subscribers", value: subscriberCount, icon: Newspaper, href: "/admin/subscriptions", buttonText: "View List" },
-    { title: "Prayer Requests", value: requestCount, icon: Mail, href: "/admin/requests", buttonText: "View Requests" },
+    { 
+      title: "Total Sermons", 
+      value: sermonCount || 0, 
+      icon: BookOpen, 
+      href: "/admin/sermons", 
+      buttonText: "View Sermons" 
+    },
+    { 
+      title: "Upcoming Events", 
+      value: eventCount || 0, 
+      icon: Calendar, 
+      href: "/admin/events", 
+      buttonText: "Add Event" 
+    },
+    { 
+      title: "Active Ministries", 
+      value: ministryCount, 
+      icon: Users, 
+      href: "/admin/ministries", 
+      buttonText: "Manage" 
+    },
+    { 
+      title: "Donations (Month)", 
+      value: monthlyDonations, 
+      icon: HandHeart, 
+      href: "/admin/donations", 
+      buttonText: "View Donations" 
+    },
+    { 
+      title: "New Subscribers", 
+      value: subscriberCount || 0, 
+      icon: Newspaper, 
+      href: "/admin/subscriptions", 
+      buttonText: "View List" 
+    },
+    { 
+      title: "Prayer Requests", 
+      value: requestCount || 0, 
+      icon: Mail, 
+      href: "/admin/requests", 
+      buttonText: "View Requests" 
+    },
   ];
+
+  const getActivityIcon = (type) => {
+    const icons = {
+      prayer_request: Heart,
+      subscriber: UserPlus,
+      donation: HandHeart,
+      contact: MessageCircle,
+      event: Calendar,
+      sermon: BookOpen
+    };
+    return icons[type] || Clock;
+  };
 
   return (
     <div>
@@ -58,12 +260,44 @@ export default async function AdminDashboard() {
 
       <div className="mt-8">
         <Card className="bg-white dark:bg-gray-800">
-            <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-gray-600 dark:text-gray-400">Activity feed coming soon...</p>
-            </CardContent>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentActivityData.data && recentActivityData.data.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivityData.data.map((activity) => {
+                  const IconComponent = getActivityIcon(activity.type);
+                  return (
+                    <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="flex-shrink-0">
+                        <IconComponent className="h-5 w-5 text-gray-500 mt-0.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {activity.title}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {activity.description}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Clock className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">No recent activity</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Activity will appear here as users interact with your site</p>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>

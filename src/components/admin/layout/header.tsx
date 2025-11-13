@@ -1,11 +1,11 @@
-
 'use client';
 
-import { Search, Bell, User, LogOut } from 'lucide-react';
+import { Search, User, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { logout } from '@/app/login/actions';
+import NotificationsDropdown from '@/components/admin/notifications/notifications-dropdown';
 
 export default function AdminHeader() {
   return (
@@ -22,10 +22,10 @@ export default function AdminHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        {/* Notifications Dropdown */}
+        <NotificationsDropdown />
+
+        {/* User Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -42,7 +42,9 @@ export default function AdminHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = '/admin/settings'}>
+              Settings
+            </DropdownMenuItem>
             <form action={logout}>
                 <button type="submit" className="w-full">
                     <DropdownMenuItem className="w-full cursor-pointer">

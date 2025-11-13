@@ -52,13 +52,13 @@ export default function WaysToGive() {
                  <DonationDialog>
                     <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 rounded-full transition-shadow hover:shadow-lg hover:glow-gold">
                         <CreditCard className="mr-2 h-5 w-5" />
-                        Donate with Card
+                        Give with Card
                     </Button>
                 </DonationDialog>
                 <DonationDialog>
                     <Button size="lg" className="w-full bg-[#00457C] text-white hover:bg-[#003057] rounded-full transition-shadow hover:shadow-lg">
                         <PaypalIcon className="mr-2 h-5 w-5" />
-                        Donate with PayPal
+                        Give with PayPal
                     </Button>
                 </DonationDialog>
               </CardContent>

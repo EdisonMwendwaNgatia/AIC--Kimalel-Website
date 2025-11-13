@@ -4,7 +4,6 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     serverActions: {
-        allowedForwardedHosts: ['localhost'],
         allowedOrigins: ['localhost:9002', 'studio.web.app']
     },
   },
