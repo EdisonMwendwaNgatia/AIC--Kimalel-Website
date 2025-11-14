@@ -1,10 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Banknote, Building, CreditCard, Smartphone } from "lucide-react";
-import Link from "next/link";
-import { PaypalIcon } from "@/components/paypal-icon";
-import { DonationDialog } from "./donation-dialog";
+import { DonationDialogPesapal } from "@/components/sections/donation-dialog-pesapal"; 
 
 const givingMethods = [
     {
@@ -49,18 +46,12 @@ export default function WaysToGive() {
                 <CardTitle className="text-accent text-2xl font-headline">Online Giving</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col md:flex-row gap-4">
-                 <DonationDialog>
+                 <DonationDialogPesapal>
                     <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 rounded-full transition-shadow hover:shadow-lg hover:glow-gold">
                         <CreditCard className="mr-2 h-5 w-5" />
-                        Give with Card
+                        Give Securely
                     </Button>
-                </DonationDialog>
-                <DonationDialog>
-                    <Button size="lg" className="w-full bg-[#00457C] text-white hover:bg-[#003057] rounded-full transition-shadow hover:shadow-lg">
-                        <PaypalIcon className="mr-2 h-5 w-5" />
-                        Give with PayPal
-                    </Button>
-                </DonationDialog>
+                </DonationDialogPesapal>
               </CardContent>
             </Card>
 
