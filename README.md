@@ -53,14 +53,26 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 # Google AI API Key (for Genkit)
 GEMINI_API_KEY=your_google_ai_api_key_here
 ```
+# Pesapal Credentials
+PESAPAL_CONSUMER_KEY=your_key_here
+PESAPAL_CONSUMER_SECRET=your_key_here
+
+#PESAPAL_MERCHANT_ID=your_merchant_id_here
+
+# Environment (sandbox/live)
+PESAPAL_ENVIRONMENT=sandbox
+
+# Callback URLs
+NEXT_PUBLIC_APP_URL=http://localhost:9002
+PESAPAL_IPN_URL=http://localhost:9002/api/payments/ipn
+PESAPAL_CALLBACK_URL=http://localhost:9002/donation/success
 
 ### 4. Set Up Supabase Database
 
 Log in to your Supabase account and run the following SQL queries in the **SQL Editor** to create the necessary tables for the application.
 
-```sql
 -- Create the sermons table
-CREATE TABLE IF NOT EXISTS sermons (
+CREATE TABLE IF NOT EXISTS public.sermons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     preacher TEXT NOT NULL,
@@ -70,11 +82,12 @@ CREATE TABLE IF NOT EXISTS sermons (
     tags TEXT[],
     type TEXT,
     published BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    day_held DATE
 );
 
 -- Create the events table
-CREATE TABLE IF NOT EXISTS events (
+CREATE TABLE IF NOT EXISTS public.events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     date TIMESTAMPTZ NOT NULL,
@@ -87,14 +100,14 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- Create the subscribers table
-CREATE TABLE IF NOT EXISTS subscribers (
+CREATE TABLE IF NOT EXISTS public.subscribers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Create the contacts table
-CREATE TABLE IF NOT EXISTS contacts (
+CREATE TABLE IF NOT EXISTS public.contacts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name TEXT NOT NULL,
     email TEXT NOT NULL,
@@ -105,27 +118,105 @@ CREATE TABLE IF NOT EXISTS contacts (
 );
 
 -- Create the event_rsvps table
-CREATE TABLE IF NOT EXISTS event_rsvps (
+CREATE TABLE IF NOT EXISTS public.event_rsvps (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name TEXT NOT NULL,
     email TEXT NOT NULL,
     event TEXT,
-    created_at TIMESTAMPTZ DEFAULT now(),
-    UNIQUE(email, event)
-);
-
--- Create the ministry_signups table
-CREATE TABLE IF NOT EXISTS ministry_signups (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    full_name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    phone TEXT,
-    ministry TEXT,
-    meta JSONB,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
-```
+-- Create the ministries table
+CREATE TABLE IF NOT EXISTS public.ministries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    icon TEXT,
+    image_id TEXT,
+    href TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create the donations table
+CREATE TABLE IF NOT EXISTS public.donations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    full_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone_number TEXT,
+    amount NUMERIC NOT NULL,
+    message TEXT,
+    transaction_id TEXT UNIQUE,
+    payment_method TEXT NOT NULL,
+    mpesa_receipt TEXT,
+    bank_reference TEXT,
+    card_last_four TEXT,
+    payment_status TEXT DEFAULT 'pending',
+    currency TEXT DEFAULT 'KES',
+    payment_gateway TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create the stories table
+CREATE TABLE IF NOT EXISTS public.stories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    excerpt TEXT,
+    category TEXT NOT NULL,
+    contributor_name TEXT NOT NULL,
+    contributor_email TEXT,
+    contributor_phone TEXT,
+    image_url TEXT,
+    status TEXT DEFAULT 'draft' CHECK (status = ANY (ARRAY['draft', 'published', 'archived'])),
+    featured BOOLEAN DEFAULT false,
+    tags TEXT[],
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create the prayer_requests table
+CREATE TABLE IF NOT EXISTS public.prayer_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    full_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    prayer_type TEXT DEFAULT 'general' CHECK (prayer_type = ANY (ARRAY['general', 'healing', 'family', 'financial', 'guidance', 'thanksgiving', 'other'])),
+    is_anonymous BOOLEAN DEFAULT false,
+    status TEXT DEFAULT 'unread' CHECK (status = ANY (ARRAY['unread', 'in_progress', 'prayed_for', 'resolved', 'archived'])),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create the site_settings table
+CREATE TABLE IF NOT EXISTS public.site_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    site_name TEXT DEFAULT 'Our Church',
+    site_description TEXT DEFAULT 'A loving community of believers',
+    contact_email TEXT DEFAULT 'info@ourchurch.org',
+    pastor_name TEXT DEFAULT 'Pastor John Doe',
+    church_address TEXT DEFAULT '123 Church Street, City, State 12345',
+    service_times TEXT DEFAULT 'Sunday: 9:00 AM & 11:00 AM\nWednesday: 7:00 PM',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Create the ministry_signups table
+CREATE TABLE IF NOT EXISTS public.ministry_signups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ministry_name VARCHAR NOT NULL,
+    full_name VARCHAR NOT NULL,
+    email VARCHAR,
+    phone_number VARCHAR,
+    parent_name VARCHAR,
+    child_name VARCHAR,
+    child_age INT,
+    additional_info JSONB,
+    status VARCHAR DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
 
 ### 5. Create an Admin User
 
@@ -168,7 +259,7 @@ The application will be available at `http://localhost:9002`.
 
 This Next.js application is ready for deployment on platforms like Vercel or Firebase App Hosting.
 
-- **Environment Variables:** Ensure you have set the `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `GEMINI_API_KEY` environment variables in your deployment provider's settings.
+- **Environment Variables:** Ensure you have set the `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `GEMINI_API_KEY`,'PESAPAL_CONSUMER_KEY' and 'PESAPAL_CONSUMER_SECRET' environment variables in your deployment provider's settings.
 - **Build Command:** `npm run build`
 - **Start Command:** `npm run start`
 
