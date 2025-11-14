@@ -3,146 +3,212 @@ import { createClient } from '@/utils/supabase/client';
 export type Sermon = {
   id: string;
   title: string;
-  preacher: string;
-  date: string;
-  description: string;
-  media_url: string | null;
   tags: string[];
-  type: string;
-  published: boolean;
-  day_held: string;
-  created_at: string;
+}
+
+function normalizeTags(tags: any): string[] {
+  if (Array.isArray(tags)) {
+    return tags.filter(tag => tag !== null && tag !== undefined && tag !== '');
+  }
+  
+  if (typeof tags === 'string') {
+    try {
+      const parsed = JSON.parse(tags);
+      return Array.isArray(parsed) ? parsed : [tags];
+    } catch {
+      if (tags.startsWith('[') && tags.endsWith(']')) {
+        return tags
+          .slice(1, -1)
+          .split(',')
+          .map(tag => tag.replace(/"/g, '').trim())
+          .filter(tag => tag !== '');
+      }
+      return [tags];
+    }
+  }
+  
+  return [];
 }
 
 export async function getNextSermon(): Promise<Sermon | null> {
   const supabase = createClient();
   
-  const { data, error } = await supabase
-    .from('sermons')
-    .select('*')
-    .gte('date', new Date().toISOString()) // Only future sermons
-    .eq('published', true)
-    .order('date', { ascending: true })
-    .limit(1)
-    .single();
+  try {
+    // Since there's no date field in the new schema, we'll get a random sermon
+    // or the first one as "next sermon"
+    const { data, error } = await supabase
+      .from('sermons')
+      .select('*')
+      .limit(1)
+      .single();
 
-  if (error) {
-    console.error('Error fetching next sermon:', error);
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log('No sermons found');
+        return null;
+      }
+      console.error('Error fetching sermon:', error);
+      return null;
+    }
+
+    // Normalize tags before returning
+    return data ? {
+      ...data,
+      tags: normalizeTags(data.tags)
+    } : null;
+  } catch (error) {
+    console.error('Unexpected error in getNextSermon:', error);
     return null;
   }
-
-  return data;
 }
 
-// Fallback: Get the most recent past sermon if no future ones exist
 export async function getLatestSermon(): Promise<Sermon | null> {
   const supabase = createClient();
   
-  const { data, error } = await supabase
-    .from('sermons')
-    .select('*')
-    .eq('published', true)
-    .order('date', { ascending: false })
-    .limit(1)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('sermons')
+      .select('*')
+      .limit(1)
+      .single();
 
-  if (error) {
-    console.error('Error fetching latest sermon:', error);
+    if (error) {
+      console.error('Error fetching latest sermon:', error);
+      return null;
+    }
+
+    // Normalize tags before returning
+    return data ? {
+      ...data,
+      tags: normalizeTags(data.tags)
+    } : null;
+  } catch (error) {
+    console.error('Unexpected error in getLatestSermon:', error);
     return null;
   }
-
-  return data;
 }
 
 export async function getLatestSermons(limit: number = 6): Promise<Sermon[]> {
   const supabase = createClient();
   
-  const { data, error } = await supabase
-    .from('sermons')
-    .select('*')
-    .eq('published', true)
-    .order('date', { ascending: false })
-    .limit(limit);
+  try {
+    const { data, error } = await supabase
+      .from('sermons')
+      .select('*')
+      .limit(limit);
 
-  if (error) {
-    console.error('Error fetching latest sermons:', error);
+    if (error) {
+      console.error('Error fetching latest sermons:', error);
+      return [];
+    }
+
+    // Normalize tags for all sermons
+    return data.map(sermon => ({
+      ...sermon,
+      tags: normalizeTags(sermon.tags)
+    }));
+  } catch (error) {
+    console.error('Unexpected error in getLatestSermons:', error);
     return [];
   }
-
-  return data;
 }
 
 export async function getPreachers(): Promise<string[]> {
   const supabase = createClient();
   
-  const { data, error } = await supabase
-    .from('sermons')
-    .select('preacher')
-    .eq('published', true)
-    .order('preacher');
-
-  if (error) {
-    console.error('Error fetching preachers:', error);
+  try {
+    // Since there's no preacher field in the new schema, return empty array
+    // or you might want to adapt this based on your new data structure
+    console.warn('Preachers field not available in current schema');
+    return [];
+  } catch (error) {
+    console.error('Unexpected error in getPreachers:', error);
     return [];
   }
-
-  // Remove duplicates and return unique preachers
-  const uniquePreachers = [...new Set(data.map(item => item.preacher))];
-  return uniquePreachers;
 }
 
 export async function getSermonTags(): Promise<string[]> {
   const supabase = createClient();
   
-  const { data, error } = await supabase
-    .from('sermons')
-    .select('tags')
-    .eq('published', true);
+  try {
+    const { data, error } = await supabase
+      .from('sermons')
+      .select('tags');
 
-  if (error) {
-    console.error('Error fetching tags:', error);
+    if (error) {
+      console.error('Error fetching tags:', error);
+      return [];
+    }
+
+    // Flatten and get unique tags with proper normalization
+    const allTags = data.flatMap(item => normalizeTags(item.tags));
+    const uniqueTags = [...new Set(allTags)].filter(Boolean);
+    return uniqueTags;
+  } catch (error) {
+    console.error('Unexpected error in getSermonTags:', error);
     return [];
   }
-
-  // Flatten and get unique tags
-  const allTags = data.flatMap(item => item.tags || []);
-  const uniqueTags = [...new Set(allTags)];
-  return uniqueTags;
 }
-
-// Add these functions to your existing sermons.ts file
 
 export async function searchSermons(query: string, preacher?: string, tag?: string, limit: number = 6): Promise<Sermon[]> {
   const supabase = createClient();
   
-  let queryBuilder = supabase
-    .from('sermons')
-    .select('*')
-    .eq('published', true);
+  try {
+    let queryBuilder = supabase
+      .from('sermons')
+      .select('*');
 
-  // Add search query
-  if (query) {
-    queryBuilder = queryBuilder.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
-  }
+    // Add search query - only search in title since description field doesn't exist
+    if (query) {
+      queryBuilder = queryBuilder.ilike('title', `%${query}%`);
+    }
 
-  // Add preacher filter
-  if (preacher && preacher !== 'all') {
-    queryBuilder = queryBuilder.eq('preacher', preacher);
-  }
+    // Skip preacher filter since preacher field doesn't exist in new schema
+    // Add tag filter
+    if (tag && tag !== 'all') {
+      queryBuilder = queryBuilder.contains('tags', [tag]);
+    }
 
-  // Add tag filter
-  if (tag && tag !== 'all') {
-    queryBuilder = queryBuilder.contains('tags', [tag]);
-  }
+    const { data, error } = await queryBuilder
+      .limit(limit);
 
-  const { data, error } = await queryBuilder
-    .order('date', { ascending: false })
-    .limit(limit);
+    if (error) {
+      console.error('Error searching sermons:', error);
+      return [];
+    }
 
-  if (error) {
-    console.error('Error searching sermons:', error);
+    // Normalize tags for all sermons
+    return data.map(sermon => ({
+      ...sermon,
+      tags: normalizeTags(sermon.tags)
+    }));
+  } catch (error) {
+    console.error('Unexpected error in searchSermons:', error);
     return [];
   }
+}
 
-  return data;
+// Updated function to get all sermons (date range not applicable in new schema)
+export async function getAllSermons(): Promise<Sermon[]> {
+  const supabase = createClient();
+  
+  try {
+    const { data, error } = await supabase
+      .from('sermons')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching all sermons:', error);
+      return [];
+    }
+
+    // Normalize tags for all sermons
+    return data.map(sermon => ({
+      ...sermon,
+      tags: normalizeTags(sermon.tags)
+    }));
+  } catch (error) {
+    console.error('Unexpected error in getAllSermons:', error);
+    return [];
+  }
 }

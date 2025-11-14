@@ -1,11 +1,11 @@
-import { getLatestSermons, getPreachers, getSermonTags } from "@/lib/supabase/sermons";
+import { getLatestSermons, getSermonTags } from "@/lib/supabase/sermons";
 import LatestSermonsClient from "./latest-sermons-client";
 
 export default async function LatestSermons() {
   // Fetch initial data from database - only get 3 sermons
-  const [sermons, preachers, tags] = await Promise.all([
-    getLatestSermons(3), // Changed from 6 to 3
-    getPreachers(),
+  // Note: getPreachers() is removed since preacher field doesn't exist in new schema
+  const [sermons, tags] = await Promise.all([
+    getLatestSermons(3),
     getSermonTags()
   ]);
 
@@ -17,7 +17,7 @@ export default async function LatestSermons() {
   return (
     <LatestSermonsClient 
       initialSermons={sermons}
-      initialPreachers={preachers}
+      initialPreachers={[]} // Empty array since preachers field doesn't exist
       initialTags={tags}
     />
   );

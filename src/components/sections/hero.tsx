@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -12,7 +11,6 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { TheeEntityLogo } from '../thee-entity-logo';
 
-
 const heroSlides = [
   PlaceHolderImages.find(p => p.id === 'hero-background'),
   PlaceHolderImages.find(p => p.id === 'hero-slide-1'),
@@ -25,6 +23,12 @@ export default function Hero() {
     Autoplay({ delay: 5000, stopOnInteraction: false }),
   ]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Wait for component to mount to avoid hydration issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -32,15 +36,58 @@ export default function Hero() {
   }, [emblaApi, setSelectedIndex]);
 
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!emblaApi || !isMounted) return;
     onSelect();
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
-  }, [emblaApi, onSelect]);
+  }, [emblaApi, onSelect, isMounted]);
 
   const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
   const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+
+  // Static fallback for server-side rendering
+  if (!isMounted) {
+    return (
+      <section className="relative h-screen flex items-center justify-center text-white text-center overflow-hidden bg-primary">
+        {/* Static background image without carousel */}
+        <div className="absolute inset-0">
+          <div className="relative w-full h-full">
+            <Image
+              src={heroSlides[0].imageUrl}
+              alt={heroSlides[0].description}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+        </div>
+        <div className="absolute inset-0 bg-primary/80"></div>
+        
+        <div className="relative z-10 px-4 flex flex-col items-center">
+          <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 text-white">
+            AIC Kimalel Saramek Church
+          </h1>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto mb-8">
+            A Place of Worship, Growth, and Community
+          </p>
+          <div>
+            <Button
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto rounded-full"
+              asChild
+            >
+              <Link href="#services">Join Us This Sunday</Link>
+            </Button>
+          </div>
+          <div className="flex justify-center items-center gap-2 mt-8">
+            <span className="text-sm text-gray-400">Powered by</span>
+            <TheeEntityLogo className="text-white"/>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative h-screen flex items-center justify-center text-white text-center overflow-hidden bg-primary">
@@ -56,8 +103,8 @@ export default function Hero() {
                 alt={slide.description}
                 fill
                 className={cn(
-                    "object-cover transition-opacity duration-1000",
-                    selectedIndex === index ? "opacity-100" : "opacity-0"
+                  "object-cover transition-opacity duration-1000",
+                  selectedIndex === index ? "opacity-100" : "opacity-0"
                 )}
                 priority={index === 0}
                 data-ai-hint={slide.imageHint}
@@ -85,21 +132,21 @@ export default function Hero() {
           </Button>
         </div>
         <div className="flex justify-center items-center gap-2 mt-8 animate-fade-in-up animation-delay-300">
-            <span className="text-sm text-gray-400">Powered by</span>
-            <TheeEntityLogo className="text-white"/>
+          <span className="text-sm text-gray-400">Powered by</span>
+          <TheeEntityLogo className="text-white"/>
         </div>
       </div>
 
       <div className="absolute z-20 bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-12">
         <PrevButton onClick={scrollPrev} />
         <div className="flex items-center justify-center gap-3">
-            {heroSlides.map((_, index) => (
-                <DotButton
-                key={index}
-                onClick={() => scrollTo(index)}
-                selected={index === selectedIndex}
-                />
-            ))}
+          {heroSlides.map((_, index) => (
+            <DotButton
+              key={index}
+              onClick={() => scrollTo(index)}
+              selected={index === selectedIndex}
+            />
+          ))}
         </div>
         <NextButton onClick={scrollNext} />
       </div>

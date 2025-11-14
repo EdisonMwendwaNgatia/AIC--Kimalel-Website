@@ -18,7 +18,6 @@ export default function SupportPage() {
         <WaysToGive />
         <Impact />
         <Gratitude />
-        <DonationForm />
       </main>
       <Footer />
     </div>
