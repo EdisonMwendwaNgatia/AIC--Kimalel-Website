@@ -1,58 +1,104 @@
-
 'use server';
 
-import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
-
-const ministrySignupSchema = z.object({
-  fullName: z.string().min(2, { message: 'Please enter your full name.' }),
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  phone: z.string().min(10, { message: 'Please enter a valid phone number.' }),
-  ministry: z.string(),
-  childName: z.string().optional(),
-  childAge: z.string().optional(),
-});
+import { redirect } from 'next/navigation';
 
 export async function handleMinistrySignup(prevState: any, formData: FormData) {
-    const ministry = formData.get('ministry');
+  const supabase = createClient();
   
-    const validatedFields = ministrySignupSchema.safeParse({
-        fullName: formData.get('fullName') || formData.get('parentName'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        ministry: ministry,
-        childName: formData.get('childName'),
-        childAge: formData.get('childAge')
+  try {
+    const ministry = formData.get('ministry') as string;
+    const fullName = formData.get('fullName') as string;
+    const parentName = formData.get('parentName') as string;
+    const childName = formData.get('childName') as string;
+    const childAge = formData.get('childAge') as string;
+    const email = formData.get('email') as string;
+    const phone = formData.get('phone') as string;
+
+    // Validate required fields
+    if (!ministry || !email) {
+      return { 
+        success: false, 
+        message: 'Ministry and email are required fields.' 
+      };
+    }
+
+    // Prepare the data for insertion
+    const signupData: any = {
+      ministry_name: ministry,
+      email: email,
+      phone_number: phone || null,
+      status: 'pending',
+      additional_info: {}
+    };
+
+    // Handle different ministry form structures
+    if (ministry === "Children's Ministry") {
+      if (!parentName || !childName || !childAge) {
+        return { 
+          success: false, 
+          message: 'Parent name, child name, and child age are required for Children\'s Ministry.' 
+        };
+      }
+      signupData.parent_name = parentName;
+      signupData.child_name = childName;
+      signupData.child_age = parseInt(childAge);
+      signupData.full_name = `${parentName} (Parent of ${childName})`;
+    } else {
+      if (!fullName) {
+        return { 
+          success: false, 
+          message: 'Full name is required.' 
+        };
+      }
+      signupData.full_name = fullName;
+    }
+
+    // Add any additional form data to additional_info
+    const additionalData: any = {};
+    formData.forEach((value, key) => {
+      if (!['ministry', 'fullName', 'parentName', 'childName', 'childAge', 'email', 'phone'].includes(key)) {
+        additionalData[key] = value;
+      }
+    });
+    
+    if (Object.keys(additionalData).length > 0) {
+      signupData.additional_info = additionalData;
+    }
+
+    console.log('💾 Saving ministry signup:', {
+      ministry: signupData.ministry_name,
+      email: signupData.email
     });
 
+    // Insert into ministry_signups table
+    const { data, error } = await supabase
+      .from('ministry_signups')
+      .insert([signupData])
+      .select()
+      .single();
 
-  if (!validatedFields.success) {
-    const fieldErrors = validatedFields.error.flatten().fieldErrors;
-    const errorMessage = fieldErrors.fullName?.[0] || fieldErrors.email?.[0] || fieldErrors.phone?.[0] || 'Invalid input.';
-    return {
-      message: errorMessage,
-      success: false,
-    };
-  }
-  
-  const supabase = createClient();
-  const { error } = await supabase
-    .from('ministry_signups')
-    .insert([{ 
-        full_name: validatedFields.data.fullName,
-        email: validatedFields.data.email,
-        phone: validatedFields.data.phone,
-        ministry: validatedFields.data.ministry,
-        meta: ministry === "Children's Ministry" ? { childName: validatedFields.data.childName, childAge: validatedFields.data.childAge } : {}
-    }]);
+    if (error) {
+      console.error('❌ Database error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to submit signup. Please try again.' 
+      };
+    }
 
-  if (error) {
-    console.error('Supabase error:', error.message);
+    console.log('✅ Ministry signup saved successfully. ID:', data.id);
+    
     return { 
-        message: 'Sorry, there was an error processing your signup. Please try again.',
-        success: false 
+      success: true, 
+      message: `Thank you for your interest in ${ministry}! We'll contact you soon.`,
+      data: data
+    };
+
+  } catch (error) {
+    console.error('💥 Ministry signup error:', error);
+    return { 
+      success: false, 
+      message: 'An unexpected error occurred. Please try again.' 
     };
   }
-
-  return { message: `Thank you for your interest, ${validatedFields.data.fullName}! We will be in touch shortly.`, success: true };
 }

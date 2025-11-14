@@ -7,7 +7,6 @@ import { handleMinistrySignup } from '@/app/ministries/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -25,7 +24,7 @@ export default function ChildrenJoin() {
   useEffect(() => {
     if (state.message) {
       toast({
-        title: "Children's Ministry Signup",
+        title: state.success ? "Registration Successful!" : "Registration Failed",
         description: state.message,
         variant: state.success ? 'default' : 'destructive',
       });
@@ -37,51 +36,59 @@ export default function ChildrenJoin() {
       <div className="section-divider mb-20"></div>
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl font-bold font-headline text-primary mb-4">
-            Join the Fun!
+          Join the Fun!
         </h2>
-         <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
-            Register your child for our Sunday School program. We can't wait to welcome them!
+        <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
+          Register your child for our Sunday School program. We can't wait to welcome them!
         </p>
-        <form action={formAction} className="max-w-2xl mx-auto mt-8 space-y-4">
+        <form action={formAction} className="max-w-2xl mx-auto mt-8 space-y-6">
           <input type="hidden" name="ministry" value="Children's Ministry" />
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-                name="parentName"
-                placeholder="Parent's Full Name"
-                required
-                className="bg-card border-border text-foreground focus:ring-accent"
+              name="parentName"
+              placeholder="Parent's Full Name"
+              required
+              className="bg-card border-border text-foreground focus:ring-accent"
             />
             <Input
-                type="email"
-                name="email"
-                placeholder="Parent's Email"
-                required
-                className="bg-card border-border text-foreground focus:ring-accent"
+              type="email"
+              name="email"
+              placeholder="Parent's Email"
+              required
+              className="bg-card border-border text-foreground focus:ring-accent"
             />
           </div>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <Input
-                name="childName"
-                placeholder="Child's Full Name"
-                required
-                className="bg-card border-border text-foreground focus:ring-accent"
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              name="childName"
+              placeholder="Child's Full Name"
+              required
+              className="bg-card border-border text-foreground focus:ring-accent"
             />
             <Input
-                type="number"
-                name="childAge"
-                placeholder="Child's Age"
-                required
-                className="bg-card border-border text-foreground focus:ring-accent"
+              type="number"
+              name="childAge"
+              placeholder="Child's Age"
+              required
+              min="3"
+              max="12"
+              className="bg-card border-border text-foreground focus:ring-accent"
             />
-           </div>
-            <Input
-                type="tel"
-                name="phone"
-                placeholder="Phone Number"
-                required
-                className="bg-card border-border text-foreground focus:ring-accent"
-            />
-          <SubmitButton />
+          </div>
+          
+          <Input
+            type="tel"
+            name="phone"
+            placeholder="Phone Number"
+            required
+            className="bg-card border-border text-foreground focus:ring-accent"
+          />
+          
+          <div className="pt-4">
+            <SubmitButton />
+          </div>
         </form>
       </div>
     </section>

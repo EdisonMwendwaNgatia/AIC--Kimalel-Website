@@ -12,12 +12,12 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending} size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 rounded-full transition-shadow hover:shadow-lg hover:glow-gold">
-      {pending ? 'Submitting...' : 'Join Men\'s Fellowship'}
+      {pending ? 'Submitting...' : 'Join Widows Ministry'}
     </Button>
   );
 }
 
-export default function MensFellowshipJoin() {
+export default function WidowsMinistryJoin() {
   const [state, formAction] = useActionState(handleMinistrySignup, { message: '', success: false });
   const { toast } = useToast();
 
@@ -32,31 +32,31 @@ export default function MensFellowshipJoin() {
   }, [state, toast]);
   
   return (
-    <section className="py-20">
+    <section className="py-20 bg-highlight">
       <div className="section-divider mb-20"></div>
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl font-bold font-headline text-white mb-4">
-          Every man has a place in God's work. Join the Men's Fellowship today.
+    Find Support and Community
         </h2>
-        <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
-          Connect with other men in faith, fellowship, and service. Grow spiritually and make a difference together.
+        <p className="max-w-2xl mx-auto text-muted-foreground mb-8">
+          Join our Widows Ministry for fellowship, support, and spiritual growth in a caring community.
         </p>
         <form action={formAction} className="max-w-2xl mx-auto mt-8 space-y-6">
-          <input type="hidden" name="ministry" value="Men's Fellowship" />
+          <input type="hidden" name="ministry" value="Widows Ministry" />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               name="fullName"
               placeholder="Full Name"
               required
-              className="bg-gray-800 border-gray-700 text-white focus:ring-accent placeholder-gray-400"
+              className="bg-card border-border text-foreground focus:ring-accent"
             />
             <Input
               type="tel"
               name="phone"
               placeholder="Phone Number"
               required
-              className="bg-gray-800 border-gray-700 text-white focus:ring-accent placeholder-gray-400"
+              className="bg-card border-border text-foreground focus:ring-accent"
             />
           </div>
           
@@ -65,7 +65,13 @@ export default function MensFellowshipJoin() {
             name="email"
             placeholder="Email Address"
             required
-            className="bg-gray-800 border-gray-700 text-white focus:ring-accent placeholder-gray-400"
+            className="bg-card border-border text-foreground focus:ring-accent"
+          />
+          
+          <Input
+            name="address"
+            placeholder="Address (optional)"
+            className="bg-card border-border text-foreground focus:ring-accent"
           />
           
           <div className="pt-4">

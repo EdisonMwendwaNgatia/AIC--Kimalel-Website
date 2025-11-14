@@ -4,6 +4,7 @@ import Header from "@/components/layout/header";
 import WidowsAbout from "@/components/sections/ministries/widows/about";
 import WidowsGallery from "@/components/sections/ministries/widows/gallery";
 import WidowsHero from "@/components/sections/ministries/widows/hero";
+import WidowJoin from "@/components/sections/ministries/widows/join";
 import WidowsSupport from "@/components/sections/ministries/widows/support";
 
 export default function WidowsPage() {
@@ -15,6 +16,7 @@ export default function WidowsPage() {
         <WidowsAbout />
         <WidowsGallery />
         <WidowsSupport />
+        <WidowJoin />
       </main>
       <Footer />
     </div>
