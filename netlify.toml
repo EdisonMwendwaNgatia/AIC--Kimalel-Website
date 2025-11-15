@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Configure secrets scanning to skip the .next build cache
+# The keys in the cache are expected since env vars are used during build
+[build.environment]
+  SECRETS_SCAN_OMIT_PATHS = ".netlify"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"

@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/server';
 import { Users, HeartHandshake, Music, Baby, HandHeart } from 'lucide-react';
 
 // Map icon names to actual components

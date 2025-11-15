@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/server';
 
 export type Sermon = {
   id: string;
