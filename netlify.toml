@@ -2,10 +2,13 @@
   command = "npm run build"
   publish = ".next"
 
-# Configure secrets scanning to skip the .next build cache
-# The keys in the cache are expected since env vars are used during build
+# Configure secrets scanning
+# The NEXT_PUBLIC_* keys are public (client-side) - expected in bundles
+# README contains example values for documentation
+# PESAPAL_ENVIRONMENT and other non-secret values are also expected
 [build.environment]
-  SECRETS_SCAN_OMIT_PATHS = ".netlify"
+  SECRETS_SCAN_OMIT_PATHS = ".netlify,.next"
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_APP_URL,PESAPAL_ENVIRONMENT,PESAPAL_CALLBACK_URL,PESAPAL_IPN_URL"
 
 [[headers]]
   for = "/_next/static/*"
