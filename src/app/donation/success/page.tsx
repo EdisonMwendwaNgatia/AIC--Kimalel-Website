@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function DonationSuccessPage() {
+export function DonationSuccessClient() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading');
   const [donationData, setDonationData] = useState<any>(null);
