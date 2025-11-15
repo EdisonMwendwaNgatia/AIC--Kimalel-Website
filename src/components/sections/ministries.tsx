@@ -2,18 +2,28 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Users, HeartHandshake, Music, Baby, HandHeart } from 'lucide-react';
 import Link from 'next/link';
-import { getMinistries } from '@/lib/supabase/ministries';
+import { getMinistriesForBuild } from '@/lib/supabase/server-data';
+
+
+const iconMap = {
+  'Users': Users,
+  'HeartHandshake': HeartHandshake,
+  'Music': Music,
+  'Baby': Baby,
+  'HandHeart': HandHeart,
+};
+
 
 export default async function Ministries() {
-  // Fetch ministries from Supabase
-  const ministries = await getMinistries();
+
+  const ministries = await getMinistriesForBuild();
   
-  // Take only the first 5 for the homepage preview
+
   const previewMinistries = ministries.slice(0, 5);
 
-  // If no ministries found, don't render the section
+
   if (!ministries.length) {
     return null;
   }
@@ -31,7 +41,7 @@ export default async function Ministries() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {previewMinistries.map((ministry) => {
             const ministryImage = PlaceHolderImages.find(p => p.id === ministry.image_id);
-            const IconComponent = ministry.icon;
+            const IconComponent = iconMap[ministry.icon as keyof typeof iconMap] || Users;
             
             return (
               <Link key={ministry.id} href={ministry.href}>

@@ -1,13 +1,13 @@
-import { getLatestSermons, getPreachers, getSermonTags } from '@/lib/supabase/sermons';
+import { getLatestSermonsForBuild,getSermonTagsForBuild } from '@/lib/supabase/server-data';
 import SermonsGrid from '@/components/sections/sermons-grid';
 
 export default async function SermonsContent() {
-  // Fetch all sermons for the sermons page (you can adjust the limit as needed)
-  const [sermons, preachers, tags] = await Promise.all([
-    getLatestSermons(50), // Fetch more sermons for the dedicated page
-    getPreachers(),
-    getSermonTags()
+
+  const [sermons,tags] = await Promise.all([
+    getLatestSermonsForBuild(50), 
+    getSermonTagsForBuild()
   ]);
+  const preachers = [];
 
   return (
     <section className="py-16 md:py-24 bg-secondary">
